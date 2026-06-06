@@ -1,0 +1,68 @@
+.article {
+  max-width: 720px;
+  padding: 2rem 1.75rem 3rem;
+}
+
+.h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(1.5rem, 3vw, 1.85rem);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.intro {
+  margin: 0 0 1.75rem;
+  font-size: 1.05rem;
+  color: var(--text-muted);
+}
+
+.step {
+  margin-bottom: 1.5rem;
+}
+
+.h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent-hover);
+}
+
+.p {
+  margin: 0;
+}
+
+.ul {
+  margin-top: 0.5rem;
+}
+
+.note {
+  margin: 1.5rem 0;
+  padding: 1rem 1.1rem;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+}
+
+.footer {
+  margin: 1.25rem 0 0;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.cta {
+  margin: 2rem 0 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.cta a {
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .article {
+    padding: 1.25rem 1.25rem 2.5rem;
+  }
+}

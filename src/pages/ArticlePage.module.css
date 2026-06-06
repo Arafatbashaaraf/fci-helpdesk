@@ -1,0 +1,20 @@
+.wrap {
+  display: flex;
+  flex: 1;
+  align-items: stretch;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg);
+}
+
+@media (max-width: 900px) {
+  .wrap {
+    flex-direction: column;
+  }
+}

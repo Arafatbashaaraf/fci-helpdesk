@@ -1,0 +1,427 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+@theme {
+  --font-sans: Inter, Poppins, ui-sans-serif, system-ui, sans-serif;
+  --color-brand-50: #ecfeff;
+  --color-brand-100: #cffafe;
+  --color-brand-500: #06b6d4;
+  --color-brand-600: #0891b2;
+  --color-brand-700: #0e7490;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  scroll-behavior: auto;
+  scroll-padding-top: 4.5rem;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 196, 255, 0.55) rgba(8, 15, 32, 0.92);
+}
+
+/* Lenis smooth scroll — wheel stays fluid without CSS scroll-behavior lag */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+/* Employee help — sticky sidebar, scrollable menu */
+@media (min-width: 1024px) {
+  .employee-help-sidebar {
+    position: sticky;
+    top: 4.75rem;
+    align-self: start;
+    max-height: calc(100vh - 5.25rem);
+  }
+
+  .employee-help-sidebar aside {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 5.25rem);
+    overflow: hidden;
+  }
+
+  .employee-help-content {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+/* Elegant scrollbars — dark navy theme */
+:root {
+  --scrollbar-size: 8px;
+  --scrollbar-track: rgba(8, 15, 32, 0.55);
+  --scrollbar-track-edge: rgba(15, 23, 42, 0.85);
+  --scrollbar-thumb: linear-gradient(
+    180deg,
+    rgba(56, 189, 248, 0.45) 0%,
+    rgba(99, 179, 255, 0.65) 50%,
+    rgba(56, 189, 248, 0.45) 100%
+  );
+  --scrollbar-thumb-hover: linear-gradient(
+    180deg,
+    rgba(96, 205, 255, 0.6) 0%,
+    rgba(147, 197, 253, 0.85) 50%,
+    rgba(96, 205, 255, 0.6) 100%
+  );
+  --scrollbar-thumb-border: rgba(255, 255, 255, 0.12);
+  --scrollbar-thumb-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 2px 8px rgba(0, 0, 0, 0.35),
+    0 0 12px rgba(56, 189, 248, 0.15);
+}
+
+html[data-theme='light'] {
+  --scrollbar-track: rgba(226, 232, 240, 0.9);
+  --scrollbar-track-edge: rgba(203, 213, 225, 0.95);
+  --scrollbar-thumb: linear-gradient(
+    180deg,
+    rgba(37, 99, 235, 0.35) 0%,
+    rgba(59, 130, 246, 0.55) 50%,
+    rgba(37, 99, 235, 0.35) 100%
+  );
+  --scrollbar-thumb-hover: linear-gradient(
+    180deg,
+    rgba(37, 99, 235, 0.5) 0%,
+    rgba(59, 130, 246, 0.7) 50%,
+    rgba(37, 99, 235, 0.5) 100%
+  );
+  --scrollbar-thumb-border: rgba(255, 255, 255, 0.5);
+  --scrollbar-thumb-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.4) inset,
+    0 2px 6px rgba(15, 23, 42, 0.12),
+    0 0 10px rgba(37, 99, 235, 0.12);
+  scrollbar-color: rgba(59, 130, 246, 0.55) rgba(226, 232, 240, 0.95);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 196, 255, 0.55) var(--scrollbar-track-edge);
+}
+
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 999px;
+  margin: 3px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border: 1px solid var(--scrollbar-thumb-border);
+  border-radius: 999px;
+  box-shadow: var(--scrollbar-thumb-shadow);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+    0 2px 10px rgba(0, 0, 0, 0.4),
+    0 0 16px rgba(56, 189, 248, 0.22);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(
+    180deg,
+    rgba(56, 189, 248, 0.7) 0%,
+    rgba(125, 211, 252, 0.9) 50%,
+    rgba(56, 189, 248, 0.7) 100%
+  );
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Guide menu — scroll inside sidebar */
+.employee-help-menu-list {
+  margin: 0;
+  padding: 0 0 0.75rem;
+  list-style: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 196, 255, 0.55) var(--scrollbar-track-edge);
+}
+
+.employee-help-menu-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.employee-help-menu-list::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 999px;
+  margin: 2px 0;
+}
+
+.employee-help-menu-list::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border: 1px solid var(--scrollbar-thumb-border);
+  border-radius: 999px;
+  box-shadow: var(--scrollbar-thumb-shadow);
+}
+
+.employee-help-menu-list::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+@media (max-width: 1023px) {
+  .employee-help-menu-list {
+    max-height: min(50vh, 420px);
+  }
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: none;
+  font-family: Inter, Poppins, ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+#root {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+html[data-theme='dark'] body {
+  background: #050816;
+  color: #f8fafc;
+}
+
+html[data-theme='light'] body {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Smooth in-page anchor jumps only (not wheel scroll) */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(:target) {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Glass panels on cosmic background */
+.fci-glass {
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+    0 16px 48px rgba(0, 0, 0, 0.35);
+}
+
+.fci-glass-header {
+  background: linear-gradient(135deg, #2563eb, #38bdf8);
+  color: #fff;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.fci-search-input {
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: rgba(30, 41, 59, 0.65);
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  color: #f1f5f9;
+  outline: none;
+  backdrop-filter: blur(8px);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.fci-search-input::placeholder {
+  color: rgba(148, 163, 184, 0.75);
+}
+
+.fci-search-input:focus {
+  border-color: rgba(56, 189, 248, 0.55);
+  box-shadow: 0 0 32px rgba(37, 99, 235, 0.25);
+}
+
+.fci-search-results {
+  border-color: rgba(56, 189, 248, 0.2) !important;
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(12px);
+}
+
+html[data-theme='light'] .fci-glass {
+  border-color: rgba(37, 99, 235, 0.15);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset,
+    0 12px 40px rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme='light'] .fci-search-input {
+  border-color: rgba(37, 99, 235, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  color: #0f172a;
+}
+
+html[data-theme='light'] .fci-search-input::placeholder {
+  color: #64748b;
+}
+
+html[data-theme='light'] .fci-search-results {
+  border-color: rgba(148, 163, 184, 0.35) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+}
+
+html[data-theme='light'] .fci-search-results a {
+  color: #0f172a !important;
+}
+
+html[data-theme='light'] .fci-search-results a:hover {
+  background: rgba(37, 99, 235, 0.08) !important;
+}
+
+.help-h-scroll-viewport {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.help-h-scroll-viewport::-webkit-scrollbar {
+  height: 10px;
+}
+
+.help-content-scroll-inner {
+  min-width: 520px;
+}
+
+.doc-prose h2,
+.doc-prose h3 {
+  @apply scroll-mt-28;
+}
+
+@keyframes floatParticle {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateY(-18px) translateX(6px);
+    opacity: 0.9;
+  }
+}
+
+/* Light theme — dark, readable text across the site */
+html[data-theme='light'] .text-white {
+  color: #0f172a;
+}
+
+html[data-theme='light'] .text-slate-100 {
+  color: #1e293b;
+}
+
+html[data-theme='light'] .text-slate-200 {
+  color: #334155;
+}
+
+html[data-theme='light'] .text-slate-300 {
+  color: #475569;
+}
+
+html[data-theme='light'] .text-slate-400 {
+  color: #64748b;
+}
+
+html[data-theme='light'] .text-slate-500 {
+  color: #64748b;
+}
+
+html[data-theme='light'] .text-sky-100 {
+  color: #0c4a6e;
+}
+
+html[data-theme='light'] .text-sky-200 {
+  color: #075985;
+}
+
+html[data-theme='light'] .text-sky-300 {
+  color: #0369a1;
+}
+
+html[data-theme='light'] .text-sky-400 {
+  color: #0284c7;
+}
+
+/* Keep white text on gradient buttons, headers, and CTAs */
+html[data-theme='light'] .fci-glass-header,
+html[data-theme='light'] .fci-glass-header *,
+html[data-theme='light'] .getStarted,
+html[data-theme='light'] .btnPrimary,
+html[data-theme='light'] a.rounded-full.bg-gradient-to-r,
+html[data-theme='light'] a.rounded-full[class*='from-blue'] {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+html[data-theme='light'] .fci-glass a.text-sky-400,
+html[data-theme='light'] .fci-glass .text-sky-400 {
+  color: #0284c7 !important;
+}
+
+html[data-theme='light'] .fci-glass a:hover {
+  color: #0369a1 !important;
+}
+
+/* Product showcase — theme-safe text (backup for CSS modules) */
+html[data-theme='dark'] #product-showcase h3,
+html[data-theme='dark'] #product-showcase .showcaseTitle {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+html[data-theme='light'] #product-showcase h3,
+html[data-theme='light'] #product-showcase [class*='showcaseTitle'] {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  background: none !important;
+}
+
+html[data-theme='light'] #product-showcase [class*='showcaseDesc'],
+html[data-theme='light'] #product-showcase [class*='showcaseLead'] {
+  color: #334155 !important;
+}
+
+html[data-theme='light'] .help-h-scroll-viewport {
+  scrollbar-color: rgba(59, 130, 246, 0.45) rgba(226, 232, 240, 0.95);
+}

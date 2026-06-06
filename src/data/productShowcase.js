@@ -1,0 +1,92 @@
+export const PRODUCT_SHOWCASE_ITEMS = [
+  {
+    id: 'guides',
+    badge: 'Knowledge base',
+    title: 'Step-by-step guides with live UI context',
+    description:
+      'Every article pairs clear instructions with real product screenshots so employees and admins complete tasks without guesswork.',
+    image: '/employee-help-login.png',
+    imageAlt: 'FCI employee login and help desk navigation',
+    link: '/docs/employee-help/employee-help/account/how-do-i-log-in-to-fci',
+    linkLabel: 'Open employee guides',
+    reverse: false,
+    callouts: [
+      {
+        id: 'nav',
+        label: 'Help navigation',
+        detail: 'Jump between categories without leaving the app.',
+        x: '12%',
+        y: '22%',
+        cardSide: 'left',
+      },
+      {
+        id: 'search',
+        label: 'Instant search',
+        detail: 'Find any guide from one search field.',
+        x: '68%',
+        y: '14%',
+        cardSide: 'right',
+      },
+    ],
+  },
+  {
+    id: 'leads',
+    badge: 'Operations',
+    title: 'Lead & member workflows, visualized',
+    description:
+      'Highlight critical form fields, menus, and save actions with annotated callouts — perfect for onboarding and support teams.',
+    image: '/employee-help-add-lead-form.png',
+    imageAlt: 'Add new lead form in FCI software',
+    link: '/docs/employee-help/employee-help/lead/how-do-i-add-a-new-lead',
+    linkLabel: 'View lead workflow',
+    reverse: true,
+    callouts: [
+      {
+        id: 'form',
+        label: 'Smart form sections',
+        detail: 'Package, payment, and profile blocks stay organized.',
+        x: '55%',
+        y: '38%',
+        cardSide: 'right',
+      },
+      {
+        id: 'submit',
+        label: 'One-click submit',
+        detail: 'Clear CTA placement reduces support tickets.',
+        x: '72%',
+        y: '78%',
+        cardSide: 'right',
+      },
+    ],
+  },
+  {
+    id: 'payments',
+    badge: 'Finance',
+    title: 'Payments & renewals at a glance',
+    description:
+      'Showcase transaction flows with zoom focus on the actions that matter — dues, renewals, and member payment history.',
+    image: '/employee-help-add-payment-package-payment.png',
+    imageAlt: 'Payment and package configuration screen',
+    link: '/docs/employee-help/employee-help/transaction/how-do-i-add-a-new-payment',
+    linkLabel: 'Explore payment guides',
+    reverse: false,
+    callouts: [
+      {
+        id: 'package',
+        label: 'Package builder',
+        detail: 'Configure plans and pricing in one panel.',
+        x: '28%',
+        y: '32%',
+        cardSide: 'left',
+      },
+      {
+        id: 'history',
+        label: 'Payment trail',
+        detail: 'Audit-friendly history for every member.',
+        x: '62%',
+        y: '68%',
+        cardSide: 'right',
+      },
+    ],
+  },
+];
