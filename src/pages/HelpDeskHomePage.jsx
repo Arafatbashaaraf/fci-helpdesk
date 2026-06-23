@@ -1,26 +1,28 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
-  BookOpen,
-  Bot,
+  ArrowUpRight,
   ChevronDown,
-  Code2,
-  Headphones,
-  Search,
-  Shield,
-  Smartphone,
-  Users,
-  Wrench,
+  ChevronRight,
+  FileText,
   Globe,
-  Share2,
-  MessageCircle,
+  Headphones,
+  HelpCircle,
   Mail,
+  MessageCircle,
+  Search,
+  Share2,
+  ShieldCheck,
+  Users,
 } from 'lucide-react';
 import BrandLogo from '../components/BrandLogo';
 import SearchBar from '../components/SearchBar';
-import ProductShowcaseSection from '../components/showcase/ProductShowcaseSection';
 import styles from './HelpDeskHomePage.module.css';
+
+const ProductShowcaseSection = lazy(
+  () => import('../components/showcase/ProductShowcaseSection'),
+);
 
 const EMPLOYEE_HELP =
   '/docs/employee-help/employee-help/account/how-do-i-log-in-to-fci';
@@ -30,36 +32,47 @@ const ADMIN_HELP =
 const HELP_CARDS = [
   {
     title: 'Employee Help',
-    desc: 'Step-by-step guides for leads, members, payments, and daily tasks.',
+    desc: 'Find solutions and guides for employee related queries.',
     icon: Users,
     to: EMPLOYEE_HELP,
   },
   {
     title: 'Admin Help',
-    desc: 'Configuration, policies, and admin dashboard documentation.',
-    icon: BookOpen,
+    desc: 'Find solutions and guides for admin related queries.',
+    icon: ShieldCheck,
     to: ADMIN_HELP,
   },
+];
+
+const POPULAR_ARTICLES = [
   {
-    title: 'Technical Support',
-    desc: 'Troubleshooting, fixes, and help from the support team.',
-    icon: Wrench,
-    to: '#support',
+    title: 'How do I log in to FCI?',
+    tag: 'Account',
+    to: '/docs/employee-help/employee-help/account/how-do-i-log-in-to-fci',
   },
   {
-    title: 'API Documentation',
-    desc: 'Integration guides and developer reference materials.',
-    icon: Code2,
-    to: '/docs',
+    title: 'How do I add a new lead?',
+    tag: 'Employee',
+    to: '/docs/employee-help/employee-help/lead/how-do-i-add-a-new-lead',
+  },
+  {
+    title: 'How do I log in to FCI?',
+    tag: 'Admin',
+    to: ADMIN_HELP,
   },
 ];
 
 const FEATURES = [
-  { icon: Search, title: 'Instant Search', desc: 'Find any article in seconds across the full knowledge base.' },
-  { icon: Bot, title: 'AI Assistant', desc: 'Smart answers powered by your documentation and help content.' },
-  { icon: Shield, title: 'Secure Documentation', desc: 'Role-based access for employees and administrators.' },
-  { icon: Smartphone, title: 'Mobile Friendly', desc: 'Read and search guides on any device, anywhere.' },
-  { icon: Headphones, title: '24/7 Support', desc: 'Always-on help resources for your entire organization.' },
+  {
+    icon: Search,
+    title: 'Instant Search',
+    desc: 'Find any article in seconds across the full knowledge base.',
+  },
+  {
+    icon: Headphones,
+    title: '24/7 Support',
+    desc: 'Always-on help resources for your entire organization.',
+  },
 ];
 
 const FAQ = [
@@ -69,7 +82,7 @@ const FAQ = [
   },
   {
     q: 'Where is admin configuration documented?',
-    a: 'Select Admin Help from the cards below or open Documentation and pick the admin section.',
+    a: 'Select Admin Help from the cards above or open Documentation and pick the admin section.',
   },
   {
     q: 'Can I search without opening a category?',
@@ -78,35 +91,29 @@ const FAQ = [
 ];
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 28 },
-  visible: (i) => ({
+  hidden: { opacity: 0, y: 20 },
+  visible: (i = 0) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.08, duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+    transition: { delay: i * 0.05, duration: 0.35, ease: [0.22, 1, 0.36, 1] },
   }),
 };
 
-function TypingHeading() {
-  const full = 'FCI Help Desk';
-  const [text, setText] = useState('');
+const popIn = {
+  hidden: { opacity: 0, y: 24 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+  },
+};
 
-  useEffect(() => {
-    let i = 0;
-    const timer = setInterval(() => {
-      if (i <= full.length) {
-        setText(full.slice(0, i));
-        i += 1;
-      } else {
-        clearInterval(timer);
-      }
-    }, 45);
-    return () => clearInterval(timer);
-  }, []);
+const noMotion = {
+  hidden: { opacity: 1, y: 0, scale: 1 },
+  visible: { opacity: 1, y: 0, scale: 1 },
+};
 
-  return <h1 className={styles.heroTitle}>{text}</h1>;
-}
-
-function FaqAccordion() {
+function FaqAccordion({ variants }) {
   const [open, setOpen] = useState(0);
 
   return (
@@ -114,7 +121,15 @@ function FaqAccordion() {
       {FAQ.map((item, index) => {
         const isOpen = open === index;
         return (
-          <div key={item.q} className={styles.accordionItem}>
+          <motion.div
+            key={item.q}
+            className={styles.accordionItem}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-40px' }}
+            variants={variants}
+            custom={index}
+          >
             <button
               type="button"
               className={styles.accordionBtn}
@@ -134,7 +149,7 @@ function FaqAccordion() {
             >
               <p className={styles.accordionContent}>{item.a}</p>
             </motion.div>
-          </div>
+          </motion.div>
         );
       })}
     </div>
@@ -142,115 +157,130 @@ function FaqAccordion() {
 }
 
 export default function HelpDeskHomePage() {
+  const reduceMotion = useReducedMotion();
+  const motionFade = reduceMotion ? noMotion : fadeUp;
+  const motionPop = reduceMotion ? noMotion : popIn;
+
   return (
     <div className={styles.page}>
-      <section className={styles.hero} id="home">
-        <div className={styles.heroGlow} aria-hidden />
-        <motion.div
-          className={styles.heroCard}
-          initial={{ opacity: 0, y: 40, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <TypingHeading />
-          <motion.p
-            className={styles.heroSub}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2, duration: 0.6 }}
-          >
-            Smart documentation, employee support, admin guides and instant search.
-          </motion.p>
-
-          <motion.div
-            className={styles.searchWrap}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.5, duration: 0.5 }}
-          >
-            <div className={styles.searchGlass}>
-              <SearchBar
-                className="w-full"
-                inputId="helpdesk-search"
-                inputClassName={styles.searchInput}
-                placeholder='Search guides… (press "/" to focus)'
-              />
-            </div>
-          </motion.div>
-
-          <motion.div
-            className={styles.heroBtns}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.7, duration: 0.5 }}
-          >
-            <Link to="/docs" className={styles.btnPrimary}>
-              Explore Docs
+      <div className={styles.shell}>
+        <div className={styles.topBar}>
+          <nav className={styles.breadcrumb} aria-label="Breadcrumb">
+            <Link to="/" className={styles.breadcrumbLink}>
+              Home
             </Link>
-            <a href="#contact" className={styles.btnSecondary}>
-              Contact Support
-            </a>
-          </motion.div>
-        </motion.div>
-      </section>
+            <ChevronRight size={14} className={styles.breadcrumbSep} aria-hidden />
+            <span className={styles.breadcrumbCurrent}>FCI User Guide</span>
+          </nav>
+          <Link to="/docs" className={styles.browseTopics}>
+            <HelpCircle size={16} aria-hidden />
+            Browse topics
+          </Link>
+        </div>
 
-      <ProductShowcaseSection />
-
-      <section className={styles.section} id="documentation">
-        <motion.h2
-          className={styles.sectionTitle}
+        <motion.section
+          className={styles.hero}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
-          variants={fadeUp}
-          custom={0}
+          variants={motionPop}
         >
-          Documentation hubs
-        </motion.h2>
-        <motion.p
-          className={styles.sectionLead}
+          <h1 className={styles.heroTitle}>How can we help you today?</h1>
+          <p className={styles.heroSub}>
+            Search our knowledge base or browse topics to find the answers you need.
+          </p>
+
+          <div className={styles.searchWrap}>
+            <Search size={18} className={styles.searchIcon} aria-hidden />
+            <SearchBar
+              className={styles.searchBar}
+              inputId="helpdesk-search"
+              inputClassName={styles.searchInput}
+              placeholder="Search for articles, topics, or keywords..."
+            />
+          </div>
+        </motion.section>
+
+        <section className={styles.categories} aria-label="Help categories">
+          <div className={styles.cardsGrid}>
+            {HELP_CARDS.map((card, i) => {
+              const Icon = card.icon;
+              return (
+                <motion.div
+                  key={card.title}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: '-30px' }}
+                  variants={motionFade}
+                  custom={i}
+                >
+                  <Link to={card.to} className={styles.helpCard}>
+                    <div className={styles.cardIconWrap}>
+                      <Icon size={22} strokeWidth={1.75} />
+                    </div>
+                    <h2 className={styles.cardTitle}>{card.title}</h2>
+                    <p className={styles.cardDesc}>{card.desc}</p>
+                    <span className={styles.cardArrow} aria-hidden>
+                      <ArrowUpRight size={16} />
+                    </span>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+        </section>
+
+        <motion.section
+          className={styles.popular}
+          aria-labelledby="popular-articles"
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          custom={1}
+          viewport={{ once: true, margin: '-30px' }}
+          variants={motionPop}
         >
-          Pick a category to open step-by-step FCI guides with screenshots.
-        </motion.p>
+          <div className={styles.popularHeader}>
+            <h2 id="popular-articles" className={styles.popularTitle}>
+              Popular Articles
+            </h2>
+            <Link to="/docs" className={styles.viewAll}>
+              View all
+            </Link>
+          </div>
 
-        <div className={styles.cardsGrid}>
-          {HELP_CARDS.map((card, i) => {
-            const Icon = card.icon;
-            return (
-              <motion.div
-                key={card.title}
+          <ul className={styles.articleList}>
+            {POPULAR_ARTICLES.map((article, i) => (
+              <motion.li
+                key={`${article.tag}-${article.to}`}
                 initial="hidden"
                 whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
+                viewport={{ once: true, margin: '-20px' }}
+                variants={motionFade}
                 custom={i}
               >
-                <Link to={card.to} className={styles.helpCard}>
-                  <div className={styles.cardIcon}>
-                    <Icon size={26} strokeWidth={1.75} />
-                  </div>
-                  <h3 className={styles.cardTitle}>{card.title}</h3>
-                  <p className={styles.cardDesc}>{card.desc}</p>
+                <Link to={article.to} className={styles.articleRow}>
+                  <span className={styles.articleIcon} aria-hidden>
+                    <FileText size={18} strokeWidth={1.75} />
+                  </span>
+                  <span className={styles.articleTitle}>{article.title}</span>
+                  <span className={styles.articleTag}>{article.tag}</span>
                 </Link>
-              </motion.div>
-            );
-          })}
-        </div>
-      </section>
+              </motion.li>
+            ))}
+          </ul>
+        </motion.section>
+      </div>
 
-      <section className={styles.section}>
+      <Suspense fallback={null}>
+        <ProductShowcaseSection />
+      </Suspense>
+
+      <section className={`${styles.scrollSection} help-perf-section`} id="features">
         <motion.h2
           className={styles.sectionTitle}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
-          variants={fadeUp}
-          custom={0}
+          variants={motionFade}
         >
           Platform features
         </motion.h2>
@@ -259,50 +289,57 @@ export default function HelpDeskHomePage() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
-          variants={fadeUp}
+          variants={motionFade}
           custom={1}
         >
           Built for fast answers and a premium support experience.
         </motion.p>
 
         <div className={styles.featuresGrid}>
-          {FEATURES.map((f, i) => {
-            const Icon = f.icon;
+          {FEATURES.map((feature, i) => {
+            const Icon = feature.icon;
             return (
               <motion.div
-                key={f.title}
+                key={feature.title}
                 className={styles.featureCard}
                 initial="hidden"
                 whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
+                viewport={{ once: true, margin: '-40px' }}
+                variants={motionFade}
                 custom={i}
-                whileHover={{ scale: 1.02 }}
+                whileHover={reduceMotion ? undefined : { scale: 1.02, y: -2 }}
+                transition={{ type: 'spring', stiffness: 320, damping: 22 }}
               >
                 <Icon className={styles.featureIcon} size={28} strokeWidth={1.5} />
-                <h3 className={styles.featureTitle}>{f.title}</h3>
-                <p className={styles.featureDesc}>{f.desc}</p>
+                <h3 className={styles.featureTitle}>{feature.title}</h3>
+                <p className={styles.featureDesc}>{feature.desc}</p>
               </motion.div>
             );
           })}
         </div>
       </section>
 
-      <section className={styles.section} id="support">
+      <section className={`${styles.scrollSection} help-perf-section`} id="support">
         <motion.h2
           className={styles.sectionTitle}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
-          variants={fadeUp}
-          custom={0}
+          variants={motionFade}
         >
           Quick answers
         </motion.h2>
-        <FaqAccordion />
+        <FaqAccordion variants={motionFade} />
       </section>
 
-      <footer className={styles.footer} id="contact">
+      <motion.footer
+        className={`${styles.footer} help-perf-section`}
+        id="contact"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={motionPop}
+      >
         <div className={styles.footerInner}>
           <div>
             <BrandLogo
@@ -311,8 +348,7 @@ export default function HelpDeskHomePage() {
               imgClassName={styles.footerLogoImg}
             />
             <p className={styles.footerText}>
-              AI powered help desk for employee guides, admin documentation, and instant
-              support search.
+              Help desk for employee guides, admin documentation, and instant support search.
             </p>
             <div className={styles.socialRow}>
               <a href="https://github.com" className={styles.socialBtn} aria-label="Website">
@@ -361,7 +397,7 @@ export default function HelpDeskHomePage() {
         <p className={styles.copyright}>
           © {new Date().getFullYear()} FCI — FITCOREXAI International Pvt Ltd. All rights reserved.
         </p>
-      </footer>
+      </motion.footer>
     </div>
   );
 }

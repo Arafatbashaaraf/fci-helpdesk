@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { Menu, Search, User, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BrandLogo from '../BrandLogo';
 import ThemeToggle from '../ThemeToggle';
+import NavbarSearchOverlay from './NavbarSearchOverlay';
 import styles from './HelpDeskNavbar.module.css';
 
 const NAV = [
@@ -15,9 +16,22 @@ const NAV = [
 
 export default function HelpDeskNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  useEffect(() => {
+    function onKeyDown(event) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setSearchOpen(true);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   return (
     <header className={styles.header}>
+      <NavbarSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
       <div className={styles.inner}>
         <BrandLogo className={styles.logoLink} imgClassName={styles.logoImg} />
 
@@ -41,7 +55,13 @@ export default function HelpDeskNavbar() {
             Get Started
           </Link>
           <ThemeToggle className={styles.themeToggle} />
-          <button type="button" className={styles.iconBtn} aria-label="Search" onClick={() => document.getElementById('helpdesk-search')?.focus()}>
+          <button
+            type="button"
+            className={styles.iconBtn}
+            aria-label="Search guides"
+            aria-expanded={searchOpen}
+            onClick={() => setSearchOpen(true)}
+          >
             <Search size={18} />
           </button>
           <button type="button" className={styles.iconBtn} aria-label="Profile">
@@ -77,6 +97,16 @@ export default function HelpDeskNavbar() {
                 {item.label}
               </NavLink>
             ))}
+            <button
+              type="button"
+              className={styles.mobileLink}
+              onClick={() => {
+                setMobileOpen(false);
+                setSearchOpen(true);
+              }}
+            >
+              Search guides
+            </button>
           </motion.nav>
         )}
       </AnimatePresence>

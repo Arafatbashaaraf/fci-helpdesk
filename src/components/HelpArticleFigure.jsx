@@ -1,14 +1,36 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-const MAX_SCALE = 6;
+const NATIVE_SCALE = 1;
+const MAX_SCALE = 4;
 const WHEEL_SENSITIVITY = 0.0012;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-export default function HelpArticleFigure({ src, alt }) {
+function snapScale(value) {
+  const rounded = Math.round(value * 100) / 100;
+  if (Math.abs(rounded - NATIVE_SCALE) < 0.02) return NATIVE_SCALE;
+  return rounded;
+}
+
+/** Strip cache-bust query so dimensions load reliably. */
+function imageSrcPath(src) {
+  const q = src.indexOf('?');
+  return q === -1 ? src : src.slice(0, q);
+}
+
+export default function HelpArticleFigure({
+  src,
+  alt,
+  wide = false,
+  narrow = false,
+  zoom = 1,
+  bleed = false,
+}) {
+  const figureZoom = typeof zoom === 'number' && zoom > 1 ? zoom : 1;
+  const imageSrc = imageSrcPath(src);
   const [open, setOpen] = useState(false);
   const [naturalSize, setNaturalSize] = useState({ w: 0, h: 0 });
   const [fitScale, setFitScale] = useState(1);
@@ -16,16 +38,18 @@ export default function HelpArticleFigure({ src, alt }) {
   const [pan, setPan] = useState({ x: 0, y: 0 });
 
   const containerRef = useRef(null);
+  const naturalSizeRef = useRef({ w: 0, h: 0 });
   const stateRef = useRef({ scale: 1, pan: { x: 0, y: 0 }, fitScale: 1 });
   const dragRef = useRef(null);
 
   const syncRef = useCallback((nextScale, nextPan, nextFit) => {
+    const snapped = snapScale(nextScale);
     stateRef.current = {
-      scale: nextScale,
+      scale: snapped,
       pan: nextPan,
       fitScale: nextFit ?? stateRef.current.fitScale,
     };
-    setScale(nextScale);
+    setScale(snapped);
     setPan(nextPan);
     if (nextFit != null) setFitScale(nextFit);
   }, []);
@@ -39,24 +63,57 @@ export default function HelpArticleFigure({ src, alt }) {
     return Math.min(availW / imgW, availH / imgH, 1);
   }, []);
 
-  const centerImage = useCallback((fit, imgW, imgH) => {
+  const centerImage = useCallback((targetScale, imgW, imgH) => {
     const box = containerRef.current;
     if (!box) return { x: 0, y: 0 };
-    const displayW = imgW * fit;
-    const displayH = imgH * fit;
+    const displayW = imgW * targetScale;
+    const displayH = imgH * targetScale;
     return {
       x: (box.clientWidth - displayW) / 2,
       y: (box.clientHeight - displayH) / 2,
     };
   }, []);
 
+  const applyScale = useCallback(
+    (targetScale, clientX, clientY) => {
+      const box = containerRef.current;
+      const { w, h } = naturalSizeRef.current;
+      if (!box || !w || !h) return;
+      const { scale: cur, pan: curPan, fitScale: fit } = stateRef.current;
+      const clamped = snapScale(clamp(targetScale, fit, MAX_SCALE));
+
+      const rect = box.getBoundingClientRect();
+      const px = clientX ?? rect.left + rect.width / 2;
+      const py = clientY ?? rect.top + rect.height / 2;
+
+      const wx = (px - rect.left - curPan.x) / cur;
+      const wy = (py - rect.top - curPan.y) / cur;
+
+      syncRef(clamped, {
+        x: px - rect.left - wx * clamped,
+        y: py - rect.top - wy * clamped,
+      });
+    },
+    [syncRef],
+  );
+
   const fitToScreen = useCallback(() => {
-    const { w, h } = naturalSize;
+    const { w, h } = naturalSizeRef.current;
     if (!w || !h) return;
     const fit = measureFit(w, h);
     const pos = centerImage(fit, w, h);
     syncRef(fit, pos, fit);
-  }, [naturalSize, measureFit, centerImage, syncRef]);
+  }, [measureFit, centerImage, syncRef]);
+
+  const zoomToNative = useCallback(() => {
+    const box = containerRef.current;
+    if (!box) return;
+    const rect = box.getBoundingClientRect();
+    const { w, h } = naturalSizeRef.current;
+    const pos = centerImage(NATIVE_SCALE, w, h);
+    syncRef(NATIVE_SCALE, pos, stateRef.current.fitScale);
+    applyScale(NATIVE_SCALE, rect.left + rect.width / 2, rect.top + rect.height / 2);
+  }, [centerImage, syncRef, applyScale]);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -64,58 +121,71 @@ export default function HelpArticleFigure({ src, alt }) {
   }, []);
 
   const openViewer = useCallback(() => {
-    setNaturalSize({ w: 0, h: 0 });
-    syncRef(1, { x: 0, y: 0 }, 1);
+    const cached = naturalSizeRef.current;
+    if (cached.w > 0) {
+      setNaturalSize(cached);
+    } else {
+      setNaturalSize({ w: 0, h: 0 });
+    }
     setOpen(true);
-  }, [syncRef]);
+  }, []);
 
-  const zoomAtPoint = useCallback((nextScale, clientX, clientY) => {
-    const box = containerRef.current;
-    if (!box) return;
-    const { scale: cur, pan: curPan, fitScale: fit } = stateRef.current;
-    const clamped = clamp(nextScale, fit, MAX_SCALE);
-
-    const rect = box.getBoundingClientRect();
-    const px = clientX - rect.left;
-    const py = clientY - rect.top;
-
-    const wx = (px - curPan.x) / cur;
-    const wy = (py - curPan.y) / cur;
-
-    syncRef(clamped, {
-      x: px - wx * clamped,
-      y: py - wy * clamped,
+  useEffect(() => {
+    if (!open || !naturalSize.w) return undefined;
+    const id = requestAnimationFrame(() => {
+      const box = containerRef.current;
+      if (!box) return;
+      const fit = measureFit(naturalSize.w, naturalSize.h);
+      const pos = centerImage(fit, naturalSize.w, naturalSize.h);
+      syncRef(fit, pos, fit);
     });
-  }, [syncRef]);
+    return () => cancelAnimationFrame(id);
+  }, [open, naturalSize.w, naturalSize.h, measureFit, centerImage, syncRef]);
+
+  const handleNaturalSize = useCallback(
+    (w, h) => {
+      naturalSizeRef.current = { w, h };
+      setNaturalSize({ w, h });
+      if (open) {
+        requestAnimationFrame(() => {
+          const fit = measureFit(w, h);
+          const pos = centerImage(fit, w, h);
+          syncRef(fit, pos, fit);
+        });
+      }
+    },
+    [open, measureFit, centerImage, syncRef],
+  );
+
+  const handleThumbLoad = useCallback(
+    (e) => {
+      const img = e.currentTarget;
+      handleNaturalSize(img.naturalWidth, img.naturalHeight);
+    },
+    [handleNaturalSize],
+  );
+
+  const handleViewerLoad = useCallback(
+    (e) => {
+      const img = e.currentTarget;
+      handleNaturalSize(img.naturalWidth, img.naturalHeight);
+    },
+    [handleNaturalSize],
+  );
 
   const zoomIn = useCallback(() => {
     const box = containerRef.current;
     if (!box) return;
     const rect = box.getBoundingClientRect();
-    zoomAtPoint(stateRef.current.scale * 1.25, rect.left + rect.width / 2, rect.top + rect.height / 2);
-  }, [zoomAtPoint]);
+    applyScale(stateRef.current.scale * 1.25, rect.left + rect.width / 2, rect.top + rect.height / 2);
+  }, [applyScale]);
 
   const zoomOut = useCallback(() => {
     const box = containerRef.current;
     if (!box) return;
     const rect = box.getBoundingClientRect();
-    zoomAtPoint(stateRef.current.scale / 1.25, rect.left + rect.width / 2, rect.top + rect.height / 2);
-  }, [zoomAtPoint]);
-
-  const handleImageLoad = useCallback(
-    (e) => {
-      const img = e.currentTarget;
-      const w = img.naturalWidth;
-      const h = img.naturalHeight;
-      setNaturalSize({ w, h });
-      requestAnimationFrame(() => {
-        const fit = measureFit(w, h);
-        const pos = centerImage(fit, w, h);
-        syncRef(fit, pos, fit);
-      });
-    },
-    [measureFit, centerImage, syncRef]
-  );
+    applyScale(stateRef.current.scale / 1.25, rect.left + rect.width / 2, rect.top + rect.height / 2);
+  }, [applyScale]);
 
   useEffect(() => {
     if (!open || !naturalSize.w) return undefined;
@@ -141,13 +211,17 @@ export default function HelpArticleFigure({ src, alt }) {
         e.preventDefault();
         fitToScreen();
       }
+      if (e.key === '1') {
+        e.preventDefault();
+        zoomToNative();
+      }
     };
 
     const onWheel = (e) => {
       e.preventDefault();
       e.stopPropagation();
       const factor = 1 - e.deltaY * WHEEL_SENSITIVITY;
-      zoomAtPoint(stateRef.current.scale * factor, e.clientX, e.clientY);
+      applyScale(stateRef.current.scale * factor, e.clientX, e.clientY);
     };
 
     const prevOverflow = document.body.style.overflow;
@@ -160,7 +234,7 @@ export default function HelpArticleFigure({ src, alt }) {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('wheel', onWheel, { capture: true });
     };
-  }, [open, close, zoomIn, zoomOut, fitToScreen, zoomAtPoint]);
+  }, [open, close, zoomIn, zoomOut, fitToScreen, applyScale, zoomToNative]);
 
   const onPointerDown = (e) => {
     if (e.button !== 0) return;
@@ -196,14 +270,20 @@ export default function HelpArticleFigure({ src, alt }) {
 
   const onDoubleClick = (e) => {
     const { scale: cur, fitScale: fit } = stateRef.current;
-    if (cur > fit * 1.05) {
+    if (Math.abs(cur - NATIVE_SCALE) < 0.05) {
       fitToScreen();
-    } else {
-      zoomAtPoint(fit * 2.5, e.clientX, e.clientY);
+      return;
     }
+    if (cur > fit * 1.05) {
+      zoomToNative();
+      return;
+    }
+    applyScale(NATIVE_SCALE, e.clientX, e.clientY);
   };
 
-  const percent = fitScale > 0 ? Math.round((scale / fitScale) * 100) : 100;
+  const percent = Math.round(scale * 100);
+  const displayW = Math.round(naturalSize.w * scale);
+  const displayH = Math.round(naturalSize.h * scale);
 
   const viewer = open
     ? createPortal(
@@ -213,7 +293,6 @@ export default function HelpArticleFigure({ src, alt }) {
           role="dialog"
           aria-modal="true"
           aria-label={alt}
-          data-lenis-prevent
         >
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-white/10 px-3 py-2.5 sm:px-4">
             <p className="min-w-0 flex-1 truncate text-sm text-slate-200">{alt}</p>
@@ -241,6 +320,14 @@ export default function HelpArticleFigure({ src, alt }) {
               </button>
               <button
                 type="button"
+                onClick={zoomToNative}
+                className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-white/20"
+                title="Full HD — 100% original pixels"
+              >
+                100%
+              </button>
+              <button
+                type="button"
                 onClick={fitToScreen}
                 className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-white/20"
               >
@@ -259,7 +346,6 @@ export default function HelpArticleFigure({ src, alt }) {
           <div
             ref={containerRef}
             className="relative min-h-0 flex-1 touch-none overflow-hidden"
-            data-lenis-prevent
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
@@ -267,38 +353,39 @@ export default function HelpArticleFigure({ src, alt }) {
             onDoubleClick={onDoubleClick}
             style={{ cursor: scale > fitScale ? 'grab' : 'zoom-in' }}
           >
-            {naturalSize.w > 0 && (
+            {naturalSize.w > 0 ? (
               <img
-                src={src}
+                src={imageSrc}
                 alt={alt}
                 draggable={false}
-                onLoad={handleImageLoad}
+                onLoad={handleViewerLoad}
+                width={naturalSize.w}
+                height={naturalSize.h}
                 style={{
                   position: 'absolute',
                   left: 0,
                   top: 0,
-                  width: naturalSize.w,
-                  height: naturalSize.h,
-                  transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+                  width: displayW,
+                  height: displayH,
+                  transform: `translate3d(${Math.round(pan.x)}px, ${Math.round(pan.y)}px, 0)`,
                   transformOrigin: '0 0',
-                  willChange: 'transform',
                   userSelect: 'none',
                 }}
-                className="pointer-events-none max-w-none select-none"
+                className="pointer-events-none max-w-none select-none help-article-figure-viewer-img"
               />
-            )}
-            {naturalSize.w === 0 && (
+            ) : (
               <img
-                src={src}
+                src={imageSrc}
                 alt={alt}
                 className="absolute left-1/2 top-1/2 max-h-full max-w-full -translate-x-1/2 -translate-y-1/2 opacity-0"
-                onLoad={handleImageLoad}
+                onLoad={handleViewerLoad}
+                decoding="sync"
               />
             )}
           </div>
 
           <p className="shrink-0 border-t border-white/10 px-4 py-2 text-center text-xs text-slate-400">
-            Mouse wheel to zoom · drag to move · double-click zoom · Fit = full image · Esc to close
+            Wheel to zoom · drag to move · double-click for 100% · 100% = full size · Esc to close
           </p>
         </div>,
         document.body
@@ -307,19 +394,40 @@ export default function HelpArticleFigure({ src, alt }) {
 
   return (
     <>
-      <div className="mt-5">
+      <div
+        className={`help-article-figure mt-5${
+          narrow ? ' help-article-figure--narrow' : ''
+        }${bleed ? ' help-article-figure--bleed' : ''}${
+          figureZoom > 1 ? ' help-article-figure--zoom' : ''
+        }`}
+        style={figureZoom > 1 ? { '--help-figure-zoom': figureZoom } : undefined}
+      >
         <button
           type="button"
           onClick={openViewer}
-          className="group flex w-full cursor-zoom-in justify-center overflow-hidden rounded-lg border border-slate-200/60 bg-transparent p-2 transition hover:border-sky-400/40 hover:ring-2 hover:ring-sky-400/25 sm:p-4 dark:border-slate-600/60 dark:bg-transparent"
+          className={`help-article-figure-btn group flex cursor-zoom-in justify-center overflow-hidden rounded-lg border border-slate-200/60 bg-white transition hover:border-sky-400/40 hover:ring-2 hover:ring-sky-400/25 dark:border-slate-600/60 dark:bg-slate-950${
+            wide
+              ? ' help-article-figure-btn--wide w-full p-0'
+              : narrow
+                ? ' help-article-figure-btn--narrow w-full p-1 sm:p-2'
+                : ' w-full p-1 sm:p-2'
+          }`}
           aria-label={`View full size: ${alt}`}
         >
           <img
-            src={src}
+            src={imageSrc}
             alt={alt}
-            className="mx-auto h-auto max-h-[min(70vh,640px)] w-auto max-w-full object-contain object-top pointer-events-none"
+            onLoad={handleThumbLoad}
+            className={`help-article-figure-img pointer-events-none ${
+              wide
+                ? `help-article-figure-img--wide${figureZoom > 1 ? ' help-article-figure-img--scaled' : ''}`
+                : narrow
+                  ? 'help-article-figure-img--narrow'
+                  : 'help-article-figure-img--default'
+            }`}
             loading="lazy"
             decoding="async"
+            fetchPriority="low"
             draggable={false}
           />
         </button>

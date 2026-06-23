@@ -12,6 +12,9 @@ export default function SearchBar({
   resultsClassName = '',
   resultsLayout = 'dropdown',
   onActiveChange,
+  autoFocus = false,
+  onDismiss,
+  onResultNavigate,
 }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -26,8 +29,14 @@ export default function SearchBar({
   }, [isActive, onActiveChange]);
 
   useEffect(() => {
+    if (autoFocus) {
+      inputRef.current?.focus();
+    }
+  }, [autoFocus]);
+
+  useEffect(() => {
     function onKeyDown(event) {
-      if (event.key === '/' && document.activeElement !== inputRef.current) {
+      if (event.key === '/' && document.activeElement !== inputRef.current && !onDismiss) {
         event.preventDefault();
         inputRef.current?.focus();
       }
@@ -35,11 +44,12 @@ export default function SearchBar({
         setQuery('');
         setOpen(false);
         inputRef.current?.blur();
+        onDismiss?.();
       }
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [onDismiss]);
 
   useEffect(() => {
     function onPointerDown(event) {
@@ -78,19 +88,24 @@ export default function SearchBar({
         <div className={resultsPanelClass}>
           {results.length > 0 ? (
             <ul
-              data-lenis-prevent
               className="max-h-[min(60vh,420px)] space-y-1 overflow-y-auto"
             >
               {results.map((item) => (
-                <li key={item.to}>
+                <li key={`${item.kind}-${item.to}`}>
                   <Link
                     to={item.to}
                     onClick={() => {
                       setOpen(false);
                       setQuery('');
+                      onResultNavigate?.();
                     }}
                     className="block rounded-lg px-3 py-2.5 transition hover:bg-sky-500/15"
                   >
+                    <p className="text-xs font-medium uppercase tracking-wide text-sky-500/90">
+                      {item.kind === 'group' && 'Menu'}
+                      {item.kind === 'category' && `${item.group} › ${item.category}`}
+                      {item.kind === 'article' && `${item.group} › ${item.category}`}
+                    </p>
                     <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                       {item.title}
                     </p>
@@ -103,7 +118,7 @@ export default function SearchBar({
             </ul>
           ) : (
             <p className="px-3 py-2 text-sm text-slate-600 dark:text-slate-400">
-              No matching guides found.
+              No matching guides found. Try words like login, lead, payment, or dashboard.
             </p>
           )}
         </div>

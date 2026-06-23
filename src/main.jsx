@@ -2,7 +2,6 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
-import SmoothScrollProvider from './components/SmoothScrollProvider';
 import './index.css';
 import { applyTheme, getStoredTheme } from './utils/theme';
 
@@ -11,9 +10,7 @@ applyTheme(getStoredTheme());
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
-      <SmoothScrollProvider>
-        <App />
-      </SmoothScrollProvider>
+      <App />
     </BrowserRouter>
   </React.StrictMode>
 );

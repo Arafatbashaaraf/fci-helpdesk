@@ -2,17 +2,40 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import HelpArticleFigure from '../components/HelpArticleFigure';
 import HelpArticleLines from '../components/HelpArticleLines';
-import { useSmoothScroll } from '../components/SmoothScrollProvider';
-import { HELP_KB, slugify } from '../data/helpKb';
+
+/** Render a help article screenshot from HELP_KB image fields (image, image2, …). */
+function KbFigure({ article, imageKey = 'image' }) {
+  const src = article[imageKey];
+  if (!src) return null;
+
+  const suffix = imageKey === 'image' ? '' : imageKey.replace(/^image/, '');
+  const wideKey = `image${suffix}Wide`;
+  const narrowKey = `image${suffix}Narrow`;
+  const altKey = `image${suffix}Alt`;
+  const zoomKey = `image${suffix}Zoom`;
+  const bleedKey = `image${suffix}Bleed`;
+
+  return (
+    <HelpArticleFigure
+      src={src}
+      alt={article[altKey] ?? article.title}
+      wide={article[wideKey]}
+      narrow={article[narrowKey]}
+      zoom={article[zoomKey]}
+      bleed={article[bleedKey]}
+    />
+  );
+}
+import { HELP_KB, buildCategoryArticleTree, slugify } from '../data/helpKb';
 
 export default function EmployeeHelpPage() {
   const { groupSlug, categorySlug, articleSlug } = useParams();
   const navigate = useNavigate();
-  const { scrollTo } = useSmoothScroll() ?? {};
   const [openCategory, setOpenCategory] = useState(null);
   const [guideNavOpen, setGuideNavOpen] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState(() => new Set());
   const [expandedCategories, setExpandedCategories] = useState(() => new Set());
+  const [expandedArticleGroups, setExpandedArticleGroups] = useState(() => new Set());
 
   const groups = Object.keys(HELP_KB);
 
@@ -26,25 +49,81 @@ export default function EmployeeHelpPage() {
     articles.find((article) => slugify(article.title) === articleSlug) ?? articles[0];
 
   const expectedPath = `/docs/employee-help/${slugify(groupFromSlug)}/${slugify(categoryFromSlug)}/${slugify(articleFromSlug?.title ?? '')}`;
-  if (!groupSlug || !categorySlug || !articleSlug || expectedPath !== `/docs/employee-help/${groupSlug}/${categorySlug}/${articleSlug}`) {
-    return <Navigate to={expectedPath} replace />;
-  }
+  const shouldRedirect =
+    !groupSlug ||
+    !categorySlug ||
+    !articleSlug ||
+    expectedPath !== `/docs/employee-help/${groupSlug}/${categorySlug}/${articleSlug}`;
 
   useEffect(() => {
-    if (scrollTo) {
-      scrollTo(0, { immediate: true });
-      return;
-    }
+    if (shouldRedirect) return;
     window.scrollTo(0, 0);
-  }, [articleFromSlug.title, scrollTo]);
+  }, [articleFromSlug?.title, shouldRedirect]);
 
   useEffect(() => {
+    if (shouldRedirect) return;
     setExpandedGroups((prev) => new Set([...prev, groupFromSlug]));
     setExpandedCategories((prev) =>
       new Set([...prev, `${slugify(groupFromSlug)}/${slugify(categoryFromSlug)}`]),
     );
+    const groupToExpand = articleFromSlug?.articleGroup ?? articleFromSlug?.articleGroupParent;
+    if (groupToExpand) {
+      setExpandedArticleGroups((prev) => new Set([...prev, groupToExpand]));
+    }
     setOpenCategory(categoryFromSlug);
-  }, [groupFromSlug, categoryFromSlug]);
+  }, [
+    groupFromSlug,
+    categoryFromSlug,
+    articleFromSlug?.articleGroup,
+    articleFromSlug?.articleGroupParent,
+    articleFromSlug?.title,
+    shouldRedirect,
+  ]);
+
+  if (shouldRedirect) {
+    return <Navigate to={expectedPath} replace />;
+  }
+
+  const toggleArticleGroup = (groupId, parentArticle, group, categoryName) => {
+    const isOpen = expandedArticleGroups.has(groupId);
+    if (isOpen) {
+      setExpandedArticleGroups((prev) => {
+        const next = new Set(prev);
+        next.delete(groupId);
+        return next;
+      });
+      return;
+    }
+
+    setExpandedArticleGroups((prev) => new Set([...prev, groupId]));
+    navigate(
+      `/docs/employee-help/${slugify(group)}/${slugify(categoryName)}/${slugify(parentArticle.title)}`,
+    );
+  };
+
+  const renderArticleNavItem = (group, categoryName, article, nested = false) => {
+    const isActive =
+      articleFromSlug.title === article.title &&
+      categoryFromSlug === categoryName &&
+      groupFromSlug === group;
+
+    return (
+      <li key={article.title}>
+        <Link
+          to={`/docs/employee-help/${slugify(group)}/${slugify(categoryName)}/${slugify(article.title)}`}
+          className={`block break-words rounded px-2 py-1 text-sm leading-6 sm:text-[15px] sm:leading-7 ${
+            nested ? 'pl-3' : ''
+          } ${
+            isActive
+              ? 'text-sky-600 dark:text-sky-400'
+              : 'text-slate-600 hover:text-sky-600 dark:text-slate-500 dark:hover:text-sky-300'
+          }`}
+        >
+          › {article.title}
+        </Link>
+      </li>
+    );
+  };
 
   const toggleGroup = (group) => {
     const isOpen = expandedGroups.has(group);
@@ -110,7 +189,6 @@ export default function EmployeeHelpPage() {
           FCI User Guide
         </h2>
         <ul
-          data-lenis-prevent
           className="employee-help-menu-list"
         >
           {Object.keys(HELP_KB).map((group) => {
@@ -158,22 +236,43 @@ export default function EmployeeHelpPage() {
                       </button>
                       {isCategoryOpen && (
                       <ul className="mt-1 space-y-1 pl-3 sm:pl-4">
-                        {categoryArticles.map((article) => (
-                          <li key={article.title}>
-                            <Link
-                              to={`/docs/employee-help/${slugify(group)}/${slugify(categoryName)}/${slugify(article.title)}`}
-                              className={`block break-words rounded px-2 py-1 text-sm leading-6 sm:text-[15px] sm:leading-7 ${
-                                articleFromSlug.title === article.title &&
-                                categoryFromSlug === categoryName &&
-                                groupFromSlug === group
-                                  ? 'text-sky-600 dark:text-sky-400'
-                                  : 'text-slate-600 hover:text-sky-600 dark:text-slate-500 dark:hover:text-sky-300'
-                              }`}
-                            >
-                              › {article.title}
-                            </Link>
-                          </li>
-                        ))}
+                        {buildCategoryArticleTree(categoryArticles).map((node) => {
+                          if (node.type === 'article') {
+                            return renderArticleNavItem(group, categoryName, node.article);
+                          }
+
+                          const { article, groupId, children } = node;
+                          const isGroupOpen = expandedArticleGroups.has(groupId);
+                          const isParentActive =
+                            articleFromSlug.title === article.title &&
+                            categoryFromSlug === categoryName &&
+                            groupFromSlug === group;
+
+                          return (
+                            <li key={article.title}>
+                              <button
+                                type="button"
+                                onClick={() => toggleArticleGroup(groupId, article, group, categoryName)}
+                                aria-expanded={isGroupOpen}
+                                className={`flex w-full items-center justify-between gap-2 break-words rounded px-2 py-1 text-left text-sm leading-6 sm:text-[15px] sm:leading-7 ${
+                                  isParentActive
+                                    ? 'text-sky-600 dark:text-sky-400'
+                                    : 'text-slate-600 hover:text-sky-600 dark:text-slate-500 dark:hover:text-sky-300'
+                                }`}
+                              >
+                                <span>› {article.title}</span>
+                                <span className="shrink-0 text-base">{isGroupOpen ? '−' : '+'}</span>
+                              </button>
+                              {isGroupOpen && children.length > 0 && (
+                                <ul className="mt-1 space-y-1 border-l border-sky-500/20 pl-2 sm:pl-3">
+                                  {children.map((child) =>
+                                    renderArticleNavItem(group, categoryName, child, true),
+                                  )}
+                                </ul>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                       )}
                     </li>
@@ -216,20 +315,37 @@ export default function EmployeeHelpPage() {
 
                 {openCategory === category && (
                   <ul className="mt-2 space-y-2 pl-7">
-                    {HELP_KB[groupFromSlug][category].map((article) => (
-                      <li key={article.title}>
-                        <Link
-                          to={`/docs/employee-help/${slugify(groupFromSlug)}/${slugify(category)}/${slugify(article.title)}`}
-                          className={`text-base leading-7 ${
-                            articleFromSlug?.title === article.title
-                              ? 'text-sky-600 dark:text-sky-400'
-                              : 'text-slate-600 hover:text-sky-600 dark:text-slate-400 dark:hover:text-sky-300'
-                          }`}
-                        >
-                          › {article.title}
-                        </Link>
-                      </li>
-                    ))}
+                    {buildCategoryArticleTree(HELP_KB[groupFromSlug][category]).map((node) => {
+                      if (node.type === 'article') {
+                        return renderArticleNavItem(groupFromSlug, category, node.article);
+                      }
+
+                      const { article, groupId, children } = node;
+                      const isGroupOpen = expandedArticleGroups.has(groupId);
+
+                      return (
+                        <li key={article.title}>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              toggleArticleGroup(groupId, article, groupFromSlug, category)
+                            }
+                            aria-expanded={isGroupOpen}
+                            className="flex w-full items-center justify-between gap-2 text-left text-base leading-7 text-slate-600 hover:text-sky-600 dark:text-slate-400 dark:hover:text-sky-300"
+                          >
+                            <span>› {article.title}</span>
+                            <span>{isGroupOpen ? '−' : '+'}</span>
+                          </button>
+                          {isGroupOpen && children.length > 0 && (
+                            <ul className="mt-1 space-y-1 pl-4">
+                              {children.map((child) =>
+                                renderArticleNavItem(groupFromSlug, category, child, true),
+                              )}
+                            </ul>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </li>
@@ -246,106 +362,71 @@ export default function EmployeeHelpPage() {
               {articleFromSlug.title}
             </h4>
             <HelpArticleLines items={articleFromSlug.body} blockKey="body" />
-            {articleFromSlug.image && (
-              <HelpArticleFigure
-                src={articleFromSlug.image}
-                alt={articleFromSlug.imageAlt ?? articleFromSlug.title}
-              />
-            )}
+            <KbFigure article={articleFromSlug} />
             {articleFromSlug.bodyContinue?.length > 0 && (
               <HelpArticleLines items={articleFromSlug.bodyContinue} blockKey="cont" />
             )}
             {articleFromSlug.image2 &&
               articleFromSlug.title === 'How do I add a new lead?' &&
-              articleFromSlug.bodyAfterImage3?.length > 0 &&
-              articleFromSlug.bodyEnd?.length > 0 && (
-                <HelpArticleFigure
-                  src={articleFromSlug.image2}
-                  alt={articleFromSlug.image2Alt ?? articleFromSlug.title}
-                />
+              articleFromSlug.bodyAfterImage3?.length > 0 && (
+                <KbFigure article={articleFromSlug} imageKey="image2" />
               )}
             {articleFromSlug.title === 'How do I add a new lead?' &&
-            articleFromSlug.bodyAfterImage3?.length > 0 &&
-            articleFromSlug.bodyEnd?.length > 0 ? (
+            articleFromSlug.bodyAfterImage3?.length > 0 ? (
               <>
                 <HelpArticleLines items={articleFromSlug.bodyAfterImage3} blockKey="a3" />
                 {articleFromSlug.image3 && (
-                  <HelpArticleFigure
-                    src={articleFromSlug.image3}
-                    alt={articleFromSlug.image3Alt ?? articleFromSlug.title}
-                  />
+                  <KbFigure article={articleFromSlug} imageKey="image3" />
                 )}
-                <HelpArticleLines items={articleFromSlug.bodyEnd} blockKey="end" />
+                {articleFromSlug.bodyEnd?.length > 0 && (
+                  <HelpArticleLines items={articleFromSlug.bodyEnd} blockKey="end" />
+                )}
                 {articleFromSlug.image4 && (
-                  <HelpArticleFigure
-                    src={articleFromSlug.image4}
-                    alt={articleFromSlug.image4Alt ?? articleFromSlug.title}
-                  />
+                  <KbFigure article={articleFromSlug} imageKey="image4" />
                 )}
                 {articleFromSlug.bodyAfterImage4?.length > 0 && (
                   <HelpArticleLines items={articleFromSlug.bodyAfterImage4} blockKey="a4" />
                 )}
                 {articleFromSlug.image5 && (
-                  <HelpArticleFigure
-                    src={articleFromSlug.image5}
-                    alt={articleFromSlug.image5Alt ?? articleFromSlug.title}
-                  />
+                  <KbFigure article={articleFromSlug} imageKey="image5" />
                 )}
               </>
             ) : (
               <>
                 {articleFromSlug.image2 &&
                   articleFromSlug.title !== 'How do I add a new lead?' && (
-                  <HelpArticleFigure
-                    src={articleFromSlug.image2}
-                    alt={articleFromSlug.image2Alt ?? articleFromSlug.title}
-                  />
+                  <KbFigure article={articleFromSlug} imageKey="image2" />
                 )}
                 {articleFromSlug.bodyEnd?.length > 0 && (
                   <HelpArticleLines items={articleFromSlug.bodyEnd} blockKey="end" />
                 )}
                 {articleFromSlug.image3 && (
-                  <HelpArticleFigure
-                    src={articleFromSlug.image3}
-                    alt={articleFromSlug.image3Alt ?? articleFromSlug.title}
-                  />
+                  <KbFigure article={articleFromSlug} imageKey="image3" />
                 )}
                 {articleFromSlug.bodyAfterImage3?.length > 0 && (
                   <HelpArticleLines items={articleFromSlug.bodyAfterImage3} blockKey="a3" />
                 )}
                 {articleFromSlug.image4 && (
-                  <HelpArticleFigure
-                    src={articleFromSlug.image4}
-                    alt={articleFromSlug.image4Alt ?? articleFromSlug.title}
-                  />
+                  <KbFigure article={articleFromSlug} imageKey="image4" />
                 )}
                 {articleFromSlug.bodyAfterImage4?.length > 0 && (
                   <HelpArticleLines items={articleFromSlug.bodyAfterImage4} blockKey="a4" />
                 )}
                 {articleFromSlug.image5 &&
                   articleFromSlug.title !== 'How do I add a new lead?' && (
-                  <HelpArticleFigure
-                    src={articleFromSlug.image5}
-                    alt={articleFromSlug.image5Alt ?? articleFromSlug.title}
-                  />
+                  <KbFigure article={articleFromSlug} imageKey="image5" />
                 )}
                 {articleFromSlug.bodyAfterImage5?.length > 0 && (
                   <HelpArticleLines items={articleFromSlug.bodyAfterImage5} blockKey="a5" />
                 )}
                 {articleFromSlug.image6 && (
-                  <HelpArticleFigure
-                    src={articleFromSlug.image6}
-                    alt={articleFromSlug.image6Alt ?? articleFromSlug.title}
-                  />
+                  <KbFigure article={articleFromSlug} imageKey="image6" />
                 )}
                 {articleFromSlug.bodyAfterImage6?.length > 0 && (
                   <HelpArticleLines items={articleFromSlug.bodyAfterImage6} blockKey="a6" />
                 )}
                 {articleFromSlug.image7 && (
-                  <HelpArticleFigure
-                    src={articleFromSlug.image7}
-                    alt={articleFromSlug.image7Alt ?? articleFromSlug.title}
-                  />
+                  <KbFigure article={articleFromSlug} imageKey="image7" />
                 )}
               </>
             )}

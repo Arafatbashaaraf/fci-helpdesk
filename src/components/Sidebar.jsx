@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { HELP_KB, slugify } from '../data/helpKb';
+import { HELP_KB, buildCategoryArticleTree, slugify } from '../data/helpKb';
 
 /** Mobile / legacy shell: same tree as Employee Help (FCI only). */
 export default function Sidebar({ isMobileOpen, onCloseMobile }) {
@@ -79,23 +79,68 @@ export default function Sidebar({ isMobileOpen, onCloseMobile }) {
                             {categoryName}
                           </p>
                           <ul className="space-y-0.5 pl-2">
-                            {categoryArticles.map((article) => {
-                              const to = `/docs/employee-help/${slugify(group)}/${slugify(categoryName)}/${slugify(article.title)}`;
-                              const isActive = activePath === to;
+                            {buildCategoryArticleTree(categoryArticles).map((node) => {
+                              if (node.type === 'article') {
+                                const to = `/docs/employee-help/${slugify(group)}/${slugify(categoryName)}/${slugify(node.article.title)}`;
+                                const isActive = activePath === to;
+                                return (
+                                  <li key={node.article.title}>
+                                    <Link
+                                      to={to}
+                                      onClick={onCloseMobile}
+                                      className={`block rounded-md px-2 py-1.5 text-sm transition ${
+                                        isActive
+                                          ? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
+                                          : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                                      }`}
+                                    >
+                                      <span className="mr-2 text-amber-400">›</span>
+                                      {node.article.title}
+                                    </Link>
+                                  </li>
+                                );
+                              }
+
+                              const parentTo = `/docs/employee-help/${slugify(group)}/${slugify(categoryName)}/${slugify(node.article.title)}`;
+                              const isParentActive = activePath === parentTo;
                               return (
-                                <li key={article.title}>
+                                <li key={node.article.title}>
                                   <Link
-                                    to={to}
+                                    to={parentTo}
                                     onClick={onCloseMobile}
-                                    className={`block rounded-md px-2 py-1.5 text-sm transition ${
-                                      isActive
+                                    className={`block rounded-md px-2 py-1.5 text-sm font-medium transition ${
+                                      isParentActive
                                         ? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
                                         : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                                     }`}
                                   >
                                     <span className="mr-2 text-amber-400">›</span>
-                                    {article.title}
+                                    {node.article.title}
                                   </Link>
+                                  {node.children.length > 0 && (
+                                    <ul className="mt-0.5 space-y-0.5 border-l border-slate-200 pl-3 dark:border-slate-700">
+                                      {node.children.map((child) => {
+                                        const childTo = `/docs/employee-help/${slugify(group)}/${slugify(categoryName)}/${slugify(child.title)}`;
+                                        const isChildActive = activePath === childTo;
+                                        return (
+                                          <li key={child.title}>
+                                            <Link
+                                              to={childTo}
+                                              onClick={onCloseMobile}
+                                              className={`block rounded-md px-2 py-1 text-sm transition ${
+                                                isChildActive
+                                                  ? 'bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white'
+                                                  : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
+                                              }`}
+                                            >
+                                              <span className="mr-2 text-amber-400">›</span>
+                                              {child.title}
+                                            </Link>
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  )}
                                 </li>
                               );
                             })}

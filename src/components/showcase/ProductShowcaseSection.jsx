@@ -22,7 +22,7 @@ const blockStagger = {
   },
 };
 
-const PARTICLES = Array.from({ length: 18 }, (_, i) => ({
+const PARTICLES = Array.from({ length: 6 }, (_, i) => ({
   id: i,
   left: `${(i * 17 + 8) % 100}%`,
   top: `${(i * 23 + 5) % 100}%`,
@@ -68,11 +68,7 @@ function ShowcaseCallout({ callout, index }) {
         viewport={{ once: true }}
         transition={{ delay: 0.4 + index * 0.12, type: 'spring', stiffness: 200 }}
       >
-        <motion.span
-          className="absolute inset-0 rounded-full border border-sky-300/40"
-          animate={{ scale: [1, 1.35, 1], opacity: [0.8, 0, 0.8] }}
-          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-        />
+        <span className="absolute inset-0 rounded-full border border-sky-300/40" />
         <span className="relative h-2 w-2 rounded-full bg-sky-300 shadow-[0_0_12px_#38bdf8]" />
       </motion.span>
 
@@ -115,7 +111,7 @@ function ShowcaseImage({ src, alt }) {
   );
 }
 
-function ShowcaseBlock({ item, index }) {
+function ShowcaseBlock({ item }) {
   const isReversed = item.reverse;
 
   return (
@@ -230,8 +226,8 @@ export default function ProductShowcaseSection() {
         </motion.header>
 
         <div className="mt-16 flex flex-col gap-24 sm:mt-20 sm:gap-28 lg:gap-32">
-          {PRODUCT_SHOWCASE_ITEMS.map((item, index) => (
-            <ShowcaseBlock key={item.id} item={item} index={index} />
+          {PRODUCT_SHOWCASE_ITEMS.map((item) => (
+            <ShowcaseBlock key={item.id} item={item} />
           ))}
         </div>
       </div>

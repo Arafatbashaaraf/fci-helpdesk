@@ -1,0 +1,16 @@
+{
+  "folders": [
+    {
+      "name": "FCI User Guide",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "explorer.compactFolders": false,
+    "explorer.excludeGitIgnore": false,
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/dist": true
+    }
+  }
+}
