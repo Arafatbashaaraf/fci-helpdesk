@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  base: process.env.GITHUB_PAGES === 'true' ? '/fci-helpdesk/' : '/',
   plugins: [react()],
   server: {
     open: true,
