@@ -7,9 +7,11 @@ import { applyTheme, getStoredTheme } from './utils/theme';
 
 applyTheme(getStoredTheme());
 
+const routerBasename = import.meta.env.BASE_URL.replace(/\/$/, '');
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={routerBasename}>
       <App />
     </BrowserRouter>
   </React.StrictMode>
