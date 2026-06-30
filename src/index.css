@@ -355,7 +355,6 @@ html[data-theme='light'] .help-article-figure-btn--wide {
   width: 100%;
   max-width: 100%;
   height: auto;
-  max-height: min(90vh, 960px);
 }
 
 .help-article-figure-img--scaled {
