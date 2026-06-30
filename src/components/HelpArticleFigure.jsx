@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { publicAssetUrl } from '../utils/publicAsset';
 
 const NATIVE_SCALE = 1;
 const MAX_SCALE = 4;
@@ -30,7 +31,7 @@ export default function HelpArticleFigure({
   bleed = false,
 }) {
   const figureZoom = typeof zoom === 'number' && zoom > 1 ? zoom : 1;
-  const imageSrc = imageSrcPath(src);
+  const imageSrc = imageSrcPath(publicAssetUrl(src));
   const [open, setOpen] = useState(false);
   const [naturalSize, setNaturalSize] = useState({ w: 0, h: 0 });
   const [fitScale, setFitScale] = useState(1);

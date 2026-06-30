@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { PRODUCT_SHOWCASE_ITEMS } from '../../data/productShowcase';
+import { publicAssetUrl } from '../../utils/publicAsset';
 import ShowcaseMockPreview from './ShowcaseMockPreview';
 import styles from './ProductShowcaseSection.module.css';
 
@@ -102,7 +103,7 @@ function ShowcaseImage({ src, alt }) {
 
   return (
     <img
-      src={src}
+      src={publicAssetUrl(src)}
       alt={alt}
       className="h-full w-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.02]"
       loading="lazy"

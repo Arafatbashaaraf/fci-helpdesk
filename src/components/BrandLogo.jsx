@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
+import { publicAssetUrl } from '../utils/publicAsset';
 
-const LOGO_SRC = '/fitcorexa-logo.png';
+const LOGO_SRC = publicAssetUrl('/fitcorexa-logo.png');
 
 /**
  * FITCOREXAI full brand lockup — sized for navbar / footer slots.
